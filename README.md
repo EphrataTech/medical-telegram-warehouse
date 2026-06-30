@@ -119,6 +119,57 @@ Each line in a `.json` file is a self-contained JSON object with these fields:
 
 ---
 
+## Task 5 — Pipeline Orchestration (Dagster)
+
+### Start the Dagster UI
+
+```bash
+# Install dependencies first
+pip install -r requirements.txt
+
+# Launch the Dagster webserver (opens http://localhost:3000)
+dagster dev -f pipeline.py
+```
+
+### Run jobs from the CLI
+
+```bash
+# Full pipeline: scrape → load → dbt → YOLO
+dagster job execute -f pipeline.py -j medical_pipeline_job
+
+# Partial jobs for ad-hoc use
+dagster job execute -f pipeline.py -j ingestion_job       # scrape + load only
+dagster job execute -f pipeline.py -j transformation_job  # dbt only
+dagster job execute -f pipeline.py -j enrichment_job      # YOLO only
+```
+
+### Pipeline graph
+
+```
+[telegram_raw_data]
+        │  scrape channels → JSON data lake + images
+        ▼
+[postgres_raw_messages]
+        │  load JSON → raw.telegram_messages
+        ▼
+[dbt_warehouse_models]
+        │  stg_telegram_messages → dim_channels
+        │                        → dim_dates
+        │                        → fct_messages
+        ▼
+[yolo_image_detections]
+           run YOLOv8n → raw.yolo_detections
+                       → fct_image_detections (dbt)
+```
+
+### Schedule
+
+The `daily_medical_pipeline` schedule runs at **02:00 UTC** every day.
+It is created in the STOPPED state — enable it in the Dagster UI under
+**Automation → Schedules**.
+
+---
+
 ## Task 2 — Data Modeling & Transformation
 
 ### 1. Load raw data into PostgreSQL

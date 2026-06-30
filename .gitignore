@@ -48,6 +48,12 @@ medical_warehouse/logs/
 # Docker
 *.override.yml
 
+# Dagster
+.dagster/
+dagster_home/
+$DAGSTER_HOME/
+dagster-daemon.pid
+
 # OS
 .DS_Store
 Thumbs.db
