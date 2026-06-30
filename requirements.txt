@@ -31,6 +31,10 @@ httpx==0.27.0
 ultralytics==8.2.18
 opencv-python-headless==4.9.0.80
 
+# Pipeline orchestration
+dagster==1.7.7
+dagster-webserver==1.7.7
+
 # Utilities
 tqdm==4.66.4
 aiofiles==23.2.1

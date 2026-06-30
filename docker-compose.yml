@@ -44,5 +44,19 @@ services:
       - ./data:/app/data
     command: uvicorn api.main:app --host 0.0.0.0 --port 8000 --reload
 
+  dagster:
+    build: .
+    container_name: medical_dagster
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file: .env
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+    command: dagster dev -f pipeline.py --host 0.0.0.0 --port 3000
+
 volumes:
   postgres_data:
