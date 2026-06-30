@@ -5,8 +5,22 @@ medical_warehouse:
       type: postgres
       host: "{{ env_var('POSTGRES_HOST', 'localhost') }}"
       port: "{{ env_var('POSTGRES_PORT', '5432') | int }}"
-      user: "{{ env_var('POSTGRES_USER') }}"
-      password: "{{ env_var('POSTGRES_PASSWORD') }}"
-      dbname: "{{ env_var('POSTGRES_DB') }}"
+      user: "{{ env_var('POSTGRES_USER', 'test_user') }}"
+      password: "{{ env_var('POSTGRES_PASSWORD', 'test_password') }}"
+      dbname: "{{ env_var('POSTGRES_DB', 'test_db') }}"
       schema: public
       threads: 4
+      keepalives_idle: 0
+      connect_timeout: 10
+
+    prod:
+      type: postgres
+      host: "{{ env_var('POSTGRES_HOST', 'localhost') }}"
+      port: "{{ env_var('POSTGRES_PORT', '5432') | int }}"
+      user: "{{ env_var('POSTGRES_USER', 'test_user') }}"
+      password: "{{ env_var('POSTGRES_PASSWORD', 'test_password') }}"
+      dbname: "{{ env_var('POSTGRES_DB', 'test_db') }}"
+      schema: public
+      threads: 8
+      keepalives_idle: 0
+      connect_timeout: 10

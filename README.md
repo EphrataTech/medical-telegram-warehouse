@@ -119,10 +119,97 @@ Each line in a `.json` file is a self-contained JSON object with these fields:
 
 ---
 
+## Task 2 — Data Modeling & Transformation
+
+### 1. Load raw data into PostgreSQL
+
+```bash
+# Load all partitions
+python scripts/load_raw.py
+
+# Load a specific date
+python scripts/load_raw.py --date 2024-06-15
+
+# Load a specific channel
+python scripts/load_raw.py --channel CheMed123
+```
+
+### 2. Run dbt transformations
+
+```bash
+cd medical_warehouse
+
+# Run all models (staging → marts)
+dbt run
+
+# Run only staging
+dbt run --select staging
+
+# Run only marts
+dbt run --select marts
+
+# Run all tests
+dbt test
+
+# Generate and serve documentation
+dbt docs generate
+dbt docs serve
+```
+
+---
+
+## Star Schema Design
+
+```
+           ┌─────────────┐
+           │ dim_channels│
+           │─────────────│
+           │ channel_key │◄─────────────┐
+           │ channel_name│              │
+           │ channel_type│              │
+           │ first_post  │              │
+           │ last_post   │              │
+           │ total_posts │              │
+           │ avg_views   │              │
+           └─────────────┘              │
+                                        │
+┌───────────┐         ┌─────────────────┴──────┐
+│ dim_dates │         │      fct_messages       │
+│───────────│         │────────────────────────-│
+│ date_key  │◄────────│ message_id              │
+│ full_date │         │ channel_key  (FK)       │
+│ day_name  │         │ date_key     (FK)       │
+│ week      │         │ message_text            │
+│ month     │         │ message_length          │
+│ quarter   │         │ view_count              │
+│ year      │         │ forward_count           │
+│ is_weekend│         │ has_image               │
+└───────────┘         │ is_pinned               │
+                      │ posted_at               │
+                      └─────────────────────────┘
+```
+
+### Design Decisions
+
+| Decision | Rationale |
+|---|---|
+| Surrogate key via `hashtext()` | No sequence dependency; reproducible across runs without a dedicated key table |
+| `dim_dates` generated from data range | No hardcoded date spine; automatically expands as new data arrives |
+| `channel_type` inferred from name | No external lookup table needed; easy to extend with more patterns |
+| `view_count` / `forward_count` defaulted to 0 | Avoids NULL propagation in SUM/AVG aggregations in BI tools |
+| Staging as `view`, marts as `table` | Views keep staging cost-free; tables make mart queries fast for dashboards |
+| `ON CONFLICT DO UPDATE` in loader | Idempotent loads — safe to re-run without duplicates |
+
+---
+
 ## Running Tests
 
 ```bash
+# Python unit tests
 pytest tests/ -v
+
+# dbt data tests
+cd medical_warehouse && dbt test
 ```
 
 ---
