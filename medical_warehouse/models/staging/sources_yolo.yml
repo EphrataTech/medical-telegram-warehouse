@@ -1,0 +1,38 @@
+version: 2
+
+sources:
+  - name: raw
+    schema: raw
+    tables:
+      - name: yolo_detections
+        description: >
+          Raw YOLO object detection results produced by src/yolo_detect.py.
+          One row per detected object per image. Images with no detections
+          have a single row with detected_class = NULL and image_category = 'other'.
+        columns:
+          - name: id
+            description: Auto-increment surrogate key.
+          - name: image_path
+            description: Relative path to the image file from the project root.
+          - name: channel
+            description: Channel name derived from the image folder name.
+          - name: message_id
+            description: Telegram message ID parsed from the image filename stem.
+          - name: detected_class
+            description: COCO class label of the detected object (NULL if no detection).
+          - name: confidence
+            description: YOLO confidence score (0–1) for this detection.
+          - name: image_category
+            description: >
+              Business classification: promotional | product_display |
+              lifestyle | other.
+          - name: bbox_x1
+            description: Left x-coordinate of the bounding box (pixels).
+          - name: bbox_y1
+            description: Top y-coordinate of the bounding box (pixels).
+          - name: bbox_x2
+            description: Right x-coordinate of the bounding box (pixels).
+          - name: bbox_y2
+            description: Bottom y-coordinate of the bounding box (pixels).
+          - name: detected_at
+            description: UTC timestamp when the detection was run.

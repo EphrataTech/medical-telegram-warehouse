@@ -1,0 +1,86 @@
+version: 2
+
+models:
+  - name: fct_image_detections
+    description: >
+      Fact table of YOLO object detections joined to the message fact table.
+      Grain: one row per detected object per image.
+      Images with no detections above the confidence threshold have a single
+      row with detected_class = NULL and image_category = 'other'.
+
+    columns:
+      - name: detection_id
+        description: Surrogate key from raw.yolo_detections.id.
+        tests:
+          - unique
+          - not_null
+
+      - name: message_id
+        description: Telegram message ID (FK to fct_messages.message_id).
+        tests:
+          - not_null
+
+      - name: channel_key
+        description: FK → dim_channels.channel_key.
+        tests:
+          - relationships:
+              to: ref('dim_channels')
+              field: channel_key
+
+      - name: date_key
+        description: FK → dim_dates.date_key (YYYYMMDD integer).
+        tests:
+          - relationships:
+              to: ref('dim_dates')
+              field: date_key
+
+      - name: channel
+        description: Lower-cased channel name.
+        tests:
+          - not_null
+
+      - name: detected_class
+        description: COCO label of the detected object (NULL = no detection).
+
+      - name: confidence_score
+        description: YOLO model confidence score (0.0–1.0).
+
+      - name: image_category
+        description: >
+          Business classification derived from detected labels:
+          promotional | product_display | lifestyle | other.
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['promotional', 'product_display', 'lifestyle', 'other']
+
+      - name: bbox_x1
+        description: Left x-coordinate of bounding box (pixels).
+      - name: bbox_y1
+        description: Top y-coordinate of bounding box (pixels).
+      - name: bbox_x2
+        description: Right x-coordinate of bounding box (pixels).
+      - name: bbox_y2
+        description: Bottom y-coordinate of bounding box (pixels).
+
+      - name: bbox_area_px
+        description: Pixel area of the bounding box (width × height).
+
+      - name: posted_at
+        description: UTC timestamp when the parent message was posted.
+
+      - name: view_count
+        description: View count of the parent message at scrape time.
+
+      - name: forward_count
+        description: Forward count of the parent message at scrape time.
+
+      - name: image_path
+        description: Relative path to the source image file.
+        tests:
+          - not_null
+
+      - name: detected_at
+        description: UTC timestamp when the YOLO detection was run.
+        tests:
+          - not_null
