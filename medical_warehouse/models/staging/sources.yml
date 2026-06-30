@@ -1,0 +1,48 @@
+version: 2
+
+sources:
+  - name: raw
+    description: >
+      Raw Telegram messages loaded from the JSON data lake into PostgreSQL
+      by scripts/load_raw.py. One row per message per channel.
+    schema: raw
+    tables:
+      - name: telegram_messages
+        description: >
+          Unprocessed messages scraped from Ethiopian medical Telegram channels.
+          Each row represents one Telegram message at the time of scraping.
+        columns:
+          - name: message_id
+            description: Telegram-assigned message identifier (unique within a channel).
+          - name: channel
+            description: Sanitised channel username (e.g. CheMed123).
+          - name: date
+            description: UTC timestamp when the message was originally posted.
+          - name: text
+            description: Raw message body text.
+          - name: views
+            description: View count at scrape time (may be NULL for old messages).
+          - name: forwards
+            description: Forward count at scrape time.
+          - name: has_photo
+            description: TRUE if the message contained a photo attachment.
+          - name: photo_id
+            description: Telegram photo identifier (NULL when has_photo is FALSE).
+          - name: media_type
+            description: Telethon media class name (e.g. MessageMediaPhoto).
+          - name: reply_to_msg_id
+            description: message_id of the parent message if this is a reply.
+          - name: edit_date
+            description: UTC timestamp of the last edit, or NULL if never edited.
+          - name: post_author
+            description: Signed post author username, if set by the channel admin.
+          - name: grouped_id
+            description: Album/group identifier when multiple media share one post.
+          - name: out
+            description: TRUE if the message was sent by the authenticated account.
+          - name: mentioned
+            description: TRUE if the authenticated account was mentioned.
+          - name: pinned
+            description: TRUE if the message is currently pinned in the channel.
+          - name: scraped_at
+            description: UTC timestamp when the scraper collected this record.

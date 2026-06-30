@@ -1,0 +1,82 @@
+version: 2
+
+models:
+  - name: stg_telegram_messages
+    description: >
+      Cleaned and standardised view of raw Telegram messages.
+      Casts all columns to correct types, filters invalid records,
+      and adds derived fields (message_length, has_image).
+      One row per unique (channel, message_id) pair.
+
+    columns:
+      - name: message_id
+        description: Telegram-assigned message identifier (unique within a channel).
+        tests:
+          - not_null
+
+      - name: channel
+        description: Lower-cased, trimmed channel username.
+        tests:
+          - not_null
+
+      - name: posted_at
+        description: UTC timestamp when the message was originally posted.
+        tests:
+          - not_null
+
+      - name: scraped_at
+        description: UTC timestamp when the scraper collected the record.
+        tests:
+          - not_null
+
+      - name: edit_date
+        description: UTC timestamp of the last edit, or NULL if never edited.
+
+      - name: message_text
+        description: Cleaned message body (empty string when originally NULL).
+
+      - name: message_length
+        description: Character length of message_text (>= 0).
+        tests:
+          - not_null
+
+      - name: view_count
+        description: View count at scrape time (defaulted to 0 when NULL).
+        tests:
+          - not_null
+
+      - name: forward_count
+        description: Forward count at scrape time (defaulted to 0 when NULL).
+        tests:
+          - not_null
+
+      - name: has_image
+        description: TRUE if the message contained a photo attachment.
+        tests:
+          - not_null
+          - accepted_values:
+              values: [true, false]
+
+      - name: photo_id
+        description: Telegram photo ID (NULL when has_image is FALSE).
+
+      - name: media_type
+        description: Telethon media class name (NULL when no media).
+
+      - name: reply_to_msg_id
+        description: message_id of the parent message if this is a reply.
+
+      - name: post_author
+        description: Signed post author username (NULL for unsigned posts).
+
+      - name: grouped_id
+        description: Album group identifier (NULL for single-media messages).
+
+      - name: is_outgoing
+        description: TRUE if sent by the authenticated scraper account.
+
+      - name: is_mentioned
+        description: TRUE if the scraper account was mentioned.
+
+      - name: is_pinned
+        description: TRUE if the message is currently pinned.

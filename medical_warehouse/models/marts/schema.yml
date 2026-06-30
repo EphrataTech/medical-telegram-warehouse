@@ -1,0 +1,245 @@
+version: 2
+
+models:
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # dim_channels
+  # ────────────────────────────────────────────────────────────────────────────
+  - name: dim_channels
+    description: >
+      Channel dimension table. One row per Telegram channel.
+      Contains descriptive attributes and pre-aggregated engagement statistics.
+      channel_key is a stable surrogate integer derived from the channel name
+      via hashtext(), used as the FK in fct_messages.
+
+    columns:
+      - name: channel_key
+        description: >
+          Surrogate integer key (abs(hashtext(channel_name))).
+          Stable across runs as long as the channel name does not change.
+        tests:
+          - unique
+          - not_null
+
+      - name: channel_name
+        description: Lower-cased Telegram channel username.
+        tests:
+          - unique
+          - not_null
+
+      - name: channel_type
+        description: >
+          Business classification of the channel inferred from its name.
+          One of: Pharmaceutical, Cosmetics, Medical.
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['Pharmaceutical', 'Cosmetics', 'Medical']
+
+      - name: first_post_date
+        description: UTC timestamp of the channel's earliest message in the warehouse.
+        tests:
+          - not_null
+
+      - name: last_post_date
+        description: UTC timestamp of the channel's most recent message in the warehouse.
+        tests:
+          - not_null
+
+      - name: total_posts
+        description: Total number of messages scraped from this channel.
+        tests:
+          - not_null
+
+      - name: avg_views
+        description: Average view count across all messages in this channel.
+
+      - name: avg_forwards
+        description: Average forward count across all messages in this channel.
+
+      - name: total_images
+        description: Total number of messages with photo attachments.
+
+      - name: pct_messages_with_image
+        description: Percentage of messages that contain a photo (0–100).
+
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # dim_dates
+  # ────────────────────────────────────────────────────────────────────────────
+  - name: dim_dates
+    description: >
+      Standard calendar dimension. One row per calendar date covering
+      the full date range of the warehouse plus a 1-year buffer on each end.
+      date_key is a YYYYMMDD integer (e.g. 20240615).
+
+    columns:
+      - name: date_key
+        description: YYYYMMDD integer surrogate key (e.g. 20240615).
+        tests:
+          - unique
+          - not_null
+
+      - name: full_date
+        description: The calendar date as a DATE value.
+        tests:
+          - unique
+          - not_null
+
+      - name: day_of_month
+        description: Day number within the month (1–31).
+        tests:
+          - not_null
+
+      - name: day_of_week
+        description: Day of week as an integer (0=Sunday … 6=Saturday).
+        tests:
+          - not_null
+
+      - name: day_name
+        description: Full day name (e.g. 'Monday   ').
+        tests:
+          - not_null
+
+      - name: is_weekend
+        description: TRUE for Saturday and Sunday.
+        tests:
+          - not_null
+          - accepted_values:
+              values: [true, false]
+
+      - name: week_of_year
+        description: ISO week number (1–53).
+        tests:
+          - not_null
+
+      - name: month
+        description: Month number (1–12).
+        tests:
+          - not_null
+
+      - name: month_name
+        description: Full month name (e.g. 'June      ').
+        tests:
+          - not_null
+
+      - name: year_month
+        description: Year-month string in YYYY-MM format (e.g. '2024-06').
+        tests:
+          - not_null
+
+      - name: quarter
+        description: Quarter number (1–4).
+        tests:
+          - not_null
+
+      - name: quarter_name
+        description: Human-readable quarter label (e.g. 'Q2 2024').
+        tests:
+          - not_null
+
+      - name: year
+        description: Four-digit calendar year.
+        tests:
+          - not_null
+
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # fct_messages
+  # ────────────────────────────────────────────────────────────────────────────
+  - name: fct_messages
+    description: >
+      Central fact table of the star schema. Grain: one row per Telegram message.
+      Joined to dim_channels via channel_key and to dim_dates via date_key.
+      Contains all quantitative measures (view_count, forward_count) and
+      boolean flags (has_image, is_pinned, is_mentioned).
+
+    columns:
+      - name: message_id
+        description: Telegram-assigned message identifier (unique within a channel).
+        tests:
+          - not_null
+
+      - name: channel_key
+        description: FK → dim_channels.channel_key.
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_channels')
+              field: channel_key
+
+      - name: date_key
+        description: FK → dim_dates.date_key (YYYYMMDD integer).
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_dates')
+              field: date_key
+
+      - name: channel
+        description: Channel name (denormalised for convenience).
+        tests:
+          - not_null
+
+      - name: message_text
+        description: Cleaned message body text.
+
+      - name: message_length
+        description: Character count of message_text (>= 0).
+        tests:
+          - not_null
+
+      - name: post_author
+        description: Signed post author username (NULL for unsigned posts).
+
+      - name: reply_to_msg_id
+        description: message_id of the parent message if this is a reply.
+
+      - name: grouped_id
+        description: Album group identifier (NULL for single-media messages).
+
+      - name: view_count
+        description: View count at scrape time (0 when originally NULL).
+        tests:
+          - not_null
+
+      - name: forward_count
+        description: Forward count at scrape time (0 when originally NULL).
+        tests:
+          - not_null
+
+      - name: has_image
+        description: TRUE if the message contained a photo attachment.
+        tests:
+          - not_null
+          - accepted_values:
+              values: [true, false]
+
+      - name: is_pinned
+        description: TRUE if the message is currently pinned in the channel.
+        tests:
+          - not_null
+
+      - name: is_mentioned
+        description: TRUE if the scraper account was mentioned.
+        tests:
+          - not_null
+
+      - name: media_type
+        description: Telethon media class name (NULL when no media).
+
+      - name: photo_id
+        description: Telegram photo ID (NULL when has_image is FALSE).
+
+      - name: posted_at
+        description: UTC timestamp when the message was originally posted.
+        tests:
+          - not_null
+
+      - name: edit_date
+        description: UTC timestamp of the last edit (NULL if never edited).
+
+      - name: scraped_at
+        description: UTC timestamp when the scraper collected this record.
+        tests:
+          - not_null
